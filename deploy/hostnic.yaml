@@ -499,7 +499,7 @@ spec:
                 fieldRef:
                   apiVersion: v1
                   fieldPath: metadata.namespace
-          image: cumirror/hostnic-plus:20210706-1021
+          image: cumirror/hostnic-plus:20210709-1617
           imagePullPolicy: IfNotPresent
           name: hostnic-node
           ports:
@@ -538,7 +538,7 @@ spec:
             - /app/install_hostnic.sh
           command:
             - /bin/sh
-          image: cumirror/hostnic-plus:20210706-1021
+          image: cumirror/hostnic-plus:20210709-1617
           imagePullPolicy: IfNotPresent
           name: hostnic-init
           resources: {}
@@ -613,7 +613,7 @@ spec:
     spec:
       containers:
         - name: hostnic-controller
-          image: cumirror/hostnic-plus:20210706-1021
+          image: cumirror/hostnic-plus:20210709-1617
           command:
             - /app/hostnic-controller
             - --v=5
