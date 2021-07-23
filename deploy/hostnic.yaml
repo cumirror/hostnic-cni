@@ -393,6 +393,7 @@ rules:
       - ""
     resources:
       - pods
+      - pods/status
       - nodes
       - configmaps
       - namespaces
@@ -439,32 +440,6 @@ subjects:
 
 ---
 
-apiVersion: v1
-data:
-  hostnic: |
-    {
-      "pool":{
-        "poolHigh":5,
-        "poolLow":3,
-        "maxNic":60
-      }
-    }
-  hostnic-cni: |
-    {
-      "cniVersion": "0.3.0",
-      "name": "hostnic",
-      "type": "hostnic",
-      "serviceCIDR" : "10.233.0.0/18",
-      "hairpin": false,
-      "natMark": "0x10000"
-    }
-kind: ConfigMap
-metadata:
-  name: hostnic-cfg-cm
-  namespace: kube-system
-
----
-
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -499,7 +474,7 @@ spec:
                 fieldRef:
                   apiVersion: v1
                   fieldPath: metadata.namespace
-          image: cumirror/hostnic-plus:20210709-1617
+          image: cumirror/hostnic-plus:20210723-1044
           imagePullPolicy: IfNotPresent
           name: hostnic-node
           ports:
@@ -538,7 +513,7 @@ spec:
             - /app/install_hostnic.sh
           command:
             - /bin/sh
-          image: cumirror/hostnic-plus:20210709-1617
+          image: cumirror/hostnic-plus:20210723-1044
           imagePullPolicy: IfNotPresent
           name: hostnic-init
           resources: {}
@@ -613,12 +588,11 @@ spec:
     spec:
       containers:
         - name: hostnic-controller
-          image: cumirror/hostnic-plus:20210709-1617
+          image: cumirror/hostnic-plus:20210723-1044
           command:
             - /app/hostnic-controller
             - --v=5
             - --log_file=/var/run/hostnic/controller.log
-            - --vxnet-pool=v-pool
           volumeMounts:
             - mountPath: /root/.qingcloud/
               name: apiaccesskey
