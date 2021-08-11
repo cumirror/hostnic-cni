@@ -13,7 +13,7 @@ spec:
         spec:
           containers:
             - name: node-patch
-              image: cumirror/hostnic-plus:20210806-1702
+              image: cumirror/hostnic-plus:20210811-1959
               command: ["sh", "-c", "/app/tools/patch-node --clusterID CLUSTERID"]
               volumeMounts:
                 - mountPath: /root/.qingcloud/

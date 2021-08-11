@@ -475,7 +475,7 @@ spec:
                 fieldRef:
                   apiVersion: v1
                   fieldPath: metadata.namespace
-          image: cumirror/hostnic-plus:20210806-1702
+          image: cumirror/hostnic-plus:20210811-1959
           imagePullPolicy: IfNotPresent
           name: hostnic-node
           ports:
@@ -514,7 +514,7 @@ spec:
             - /app/install_hostnic.sh
           command:
             - /bin/sh
-          image: cumirror/hostnic-plus:20210806-1702
+          image: cumirror/hostnic-plus:20210811-1959
           imagePullPolicy: IfNotPresent
           name: hostnic-init
           resources: {}
@@ -572,25 +572,6 @@ spec:
 
 ---
 
-apiVersion: v1
-kind: Service
-metadata:
-  name: hostnic-svc
-  namespace: kube-system
-  labels:
-    app: hostnic-node
-spec:
-  selector:
-    app: hostnic-node
-  ports:
-    - protocol: TCP
-      port: 9191
-      targetPort: 9191
-      name: hostnic-metrics-port
-  type: ClusterIP
-
----
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -608,7 +589,7 @@ spec:
     spec:
       containers:
         - name: hostnic-controller
-          image: cumirror/hostnic-plus:20210806-1702
+          image: cumirror/hostnic-plus:20210811-1959
           command:
             - /app/hostnic-controller
             - --v=5
