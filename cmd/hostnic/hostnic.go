@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
 	"runtime"
 
 	"github.com/containernetworking/cni/pkg/skel"
@@ -48,6 +49,67 @@ func init() {
 	// since namespace ops (unshare, setns) are done for a single thread, we
 	// must ensure that the goroutine does not jump from OS thread to thread
 	runtime.LockOSThread()
+}
+
+func checkConf(conf *constants.NetConf) error {
+	if conf.LogLevel == 0 {
+		conf.LogLevel = int(logrus.InfoLevel)
+	}
+	log.Setup(&log.LogOptions{
+		Level: conf.LogLevel,
+		File:  conf.LogFile,
+	})
+
+	if conf.HostVethPrefix == "" {
+		conf.HostVethPrefix = constants.HostNicPrefix
+	}
+
+	if conf.MTU == 0 {
+		conf.MTU = 1500
+	}
+
+	if conf.HostNicType != constants.HostNicPassThrough {
+		conf.HostNicType = constants.HostNicVeth
+	}
+
+	if conf.RT2Pod == 0 {
+		conf.RT2Pod = constants.MainTable
+	}
+
+	if conf.Interface == "" {
+		conf.Interface = constants.DefaultPrimaryNic
+	}
+
+	if conf.NatMark == "" {
+		conf.NatMark = constants.DefaultNatMark
+	}
+
+	return nil
+}
+
+func configureRoute(ifName string, routes []*types.Route) error {
+	link, err := netlink.LinkByName(ifName)
+	if err != nil {
+		return fmt.Errorf("failed to lookup %q: %v", ifName, err)
+	}
+
+	if err := netlink.LinkSetUp(link); err != nil {
+		return fmt.Errorf("failed to set %q UP: %v", ifName, err)
+	}
+
+	for _, r := range routes {
+		route := netlink.Route{
+			LinkIndex: link.Attrs().Index,
+			Dst:       &r.Dst,
+			Gw:        r.GW,
+		}
+
+		if err := netlink.RouteReplace(&route); err != nil && !os.IsExist(err) {
+			return fmt.Errorf("failed to add route %v: %v", route, err)
+		}
+	}
+
+	return nil
 }
 
 func createMacvlan(master, ifName string, mtu int, netns ns.NetNS) (*current.Interface, error) {
@@ -106,42 +168,6 @@ func createMacvlan(master, ifName string, mtu int, netns ns.NetNS) (*current.Int
 	return macvlan, nil
 }
 
-func checkConf(conf *constants.NetConf) error {
-	if conf.LogLevel == 0 {
-		conf.LogLevel = int(logrus.InfoLevel)
-	}
-	log.Setup(&log.LogOptions{
-		Level: conf.LogLevel,
-		File:  conf.LogFile,
-	})
-
-	if conf.HostVethPrefix == "" {
-		conf.HostVethPrefix = constants.HostNicPrefix
-	}
-
-	if conf.MTU == 0 {
-		conf.MTU = 1500
-	}
-
-	if conf.HostNicType != constants.HostNicPassThrough {
-		conf.HostNicType = constants.HostNicVeth
-	}
-
-	if conf.RT2Pod == 0 {
-		conf.RT2Pod = constants.MainTable
-	}
-
-	if conf.Interface == "" {
-		conf.Interface = constants.DefaultPrimaryNic
-	}
-
-	if conf.NatMark == "" {
-		conf.NatMark = constants.DefaultNatMark
-	}
-
-	return nil
-}
-
 func cmdAdd(args *skel.CmdArgs) error {
 	var err error
 
@@ -194,7 +220,34 @@ func cmdAdd(args *skel.CmdArgs) error {
 	}
 
 	result.IPs = rst.IPs
-	result.Routes = rst.Routes
+	result.Routes = nil
+	net1Routes := []*types.Route{
+		{
+			Dst: net.IPNet{
+				IP:   net.IPv4zero,
+				Mask: net.CIDRMask(0, 32),
+			},
+			GW: net.ParseIP(ipamMsg.Nic.VxNet.Gateway),
+		},
+	}
+
+	_, calico, _ := net.ParseCIDR("10.10.0.0/16")
+	_, svc, _ := net.ParseCIDR("10.96.0.0/16")
+	eth0Routes := []*types.Route{
+		{
+			Dst: net.IPNet{
+				IP:   calico.IP,
+				Mask: calico.Mask,
+			},
+			GW: net.ParseIP("169.254.1.1"),
+		}, {
+			Dst: net.IPNet{
+				IP:   svc.IP,
+				Mask: svc.Mask,
+			},
+			GW: net.ParseIP("169.254.1.1"),
+		},
+	}
 
 	for _, ipc := range result.IPs {
 		// All addresses apply to the container macvlan interface
@@ -203,6 +256,14 @@ func cmdAdd(args *skel.CmdArgs) error {
 
 	err = netns.Do(func(_ ns.NetNS) error {
 		if err := ipam.ConfigureIface(args.IfName, result); err != nil {
+			return err
+		}
+
+		if err := configureRoute(args.IfName, net1Routes); err != nil {
+			return err
+		}
+
+		if err := configureRoute("eth0", eth0Routes); err != nil {
 			return err
 		}
 

@@ -78,34 +78,13 @@ func (n NetworkUtils) SetupNetwork(nic *rpc.HostNic) (rpc.Phase, error) {
 
 func (n NetworkUtils) CheckAndRepairNetwork(nic *rpc.HostNic) (rpc.Phase, error) {
 	devName := constants.GetHostNicName(nic.VxNet.ID)
-	brName := constants.GetHostNicBridgeName(int(nic.RouteTableNum))
-	master, slave, err := n.getLinksByMacAddr(nic.HardwareAddr)
-	if master == nil && slave == nil {
-		return rpc.Phase_Init, fmt.Errorf("failed to get link %s: %v %v %v", nic.HardwareAddr, master, slave, err)
+	master, _, err := n.getLinksByMacAddr(nic.HardwareAddr)
+	if master == nil {
+		return rpc.Phase_Init, fmt.Errorf("failed to get link %s: %v %v", nic.HardwareAddr, master, err)
 	}
 
-	if slave == nil {
-		// nic has attached, but bridge not set: maybe node reboot, just rebuild all
-		if err := n.setupNicNetwork(devName, master); err != nil {
-			return rpc.Phase_CreateAndAttach, err
-		}
-		if err := n.setupBridgeNetwork(master, brName); err != nil {
-			return rpc.Phase_JoinBridge, err
-		}
-		if err := n.setupRouteTable(nic); err != nil {
-			return rpc.Phase_SetRouteTable, err
-		}
-	} else {
-		// maybe agent reboot, then check all and do some repair
-		if err := n.setupNicNetwork(devName, slave); err != nil {
-			return rpc.Phase_CreateAndAttach, err
-		}
-		if err := n.setupBridgeNetwork(slave, brName); err != nil {
-			return rpc.Phase_JoinBridge, err
-		}
-		if err := n.setupRouteTable(nic); err != nil {
-			return rpc.Phase_SetRouteTable, err
-		}
+	if err := n.setupNicNetwork(devName, master); err != nil {
+		return rpc.Phase_CreateAndAttach, err
 	}
 
 	return rpc.Phase_Succeeded, nil

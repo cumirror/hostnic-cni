@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"hash/fnv"
 	"math/big"
 
 	cnet "github.com/projectcalico/libcalico-go/lib/net"
@@ -195,6 +196,12 @@ func (b IPPool) Overlapped(dst IPPool) bool {
 	return cidr.IsNetOverlap(cidrDst.IPNet)
 }
 
+func hash(key string) uint32 {
+	h := fnv.New32a()
+	h.Write([]byte(key))
+	return h.Sum32()
+}
+
 func (pool IPPool) ID() uint32 {
 	switch pool.Spec.Type {
 	case VLAN:
@@ -204,7 +211,7 @@ func (pool IPPool) ID() uint32 {
 	case Calico:
 		return CalicoID
 	case Local:
-		return LocalID
+		return hash(pool.Name)
 	}
 
 	return PodID
