@@ -24,7 +24,6 @@ github.com/containernetworking/plugins/pkg/utils/buildversion
 github.com/containernetworking/plugins/pkg/utils/hwaddr
 github.com/containernetworking/plugins/pkg/utils/sysctl
 # github.com/coreos/go-iptables v0.4.5
-## explicit
 github.com/coreos/go-iptables/iptables
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
@@ -95,6 +94,9 @@ github.com/hashicorp/hcl/json/token
 github.com/imdario/mergo
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
+# github.com/j-keck/arping v0.0.0-20160618110441-2cf9dc699c56
+## explicit
+github.com/j-keck/arping
 # github.com/json-iterator/go v1.1.11
 github.com/json-iterator/go
 # github.com/kelseyhightower/envconfig v1.4.0

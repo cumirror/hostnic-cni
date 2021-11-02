@@ -192,13 +192,19 @@ func (a *Allocator) AllocHostNic(args *rpc.PodInfo) (*rpc.HostNic, error) {
 			}
 			return nic.Nic, nil
 		} else {
-			// create bridge and rule here
-			phase, err := networkutils.NetworkHelper.SetupNetwork(nic.Nic)
-			if err != nil {
-				if err := a.setNicStatus(nic.Nic, phase); err != nil {
-					log.Errorf("setNicStatus failed: %s %s %v", getNicKey(nic.Nic), phase.String(), err)
-				}
-				return nil, err
+			/*
+				    // create bridge and rule here
+					phase, err := networkutils.NetworkHelper.SetupNetwork(nic.Nic)
+					if err != nil {
+						if err := a.setNicStatus(nic.Nic, phase); err != nil {
+							log.Errorf("setNicStatus failed: %s %s %v", getNicKey(nic.Nic), phase.String(), err)
+						}
+						return nil, err
+					}
+			*/
+			phase := rpc.Phase_Succeeded
+			if err := a.setNicStatus(nic.Nic, phase); err != nil {
+				log.Errorf("setNicStatus failed: %s %s %v", getNicKey(nic.Nic), phase.String(), err)
 			}
 			if err := a.addNicPod(nic.Nic, args); err != nil {
 				log.Errorf("addNicPod failed: %s %s %v", getNicKey(nic.Nic), getPodKey(args), err)

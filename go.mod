@@ -5,9 +5,9 @@ go 1.16
 require (
 	github.com/containernetworking/cni v0.8.0
 	github.com/containernetworking/plugins v0.8.6
-	github.com/coreos/go-iptables v0.4.5
 	github.com/davecgh/go-spew v1.1.1
 	github.com/golang/protobuf v1.5.2
+	github.com/j-keck/arping v0.0.0-20160618110441-2cf9dc699c56
 	github.com/kelseyhightower/envconfig v1.4.0 // indirect
 	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mitchellh/mapstructure v1.4.0 // indirect

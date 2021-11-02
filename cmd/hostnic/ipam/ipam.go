@@ -29,7 +29,6 @@ import (
 	"github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/cni/pkg/types/current"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
 
@@ -85,17 +84,17 @@ func AddrAlloc(args *skel.CmdArgs) (*rpc.IPAMMessage, *current.Result, error) {
 		time.Sleep(1 * time.Second)
 	}
 
-	index := 0
+	_, ipnet, _ := net.ParseCIDR(nic.VxNet.Network)
+
 	result := &current.Result{
 		IPs: []*current.IPConfig{
 			{
 				Version: "4",
 				Address: net.IPNet{
 					IP:   net.ParseIP(r.IP),
-					Mask: net.CIDRMask(32, 32),
+					Mask: ipnet.Mask,
 				},
-				Interface: &index,
-				Gateway:   net.ParseIP("169.254.1.1"),
+				Gateway: net.ParseIP(nic.VxNet.Gateway),
 			},
 		},
 	}
@@ -143,10 +142,6 @@ func AddrUnalloc(args *skel.CmdArgs, peek bool) (*rpc.IPAMMessage, error) {
 	}
 	if reply.Nic == nil || reply.Args.Containter != args.ContainerID {
 		return nil, ErrNicNotFound
-	} else {
-		if err := networkutils.NetworkHelper.CleanupPodNetwork(reply.Nic, reply.IP); err != nil {
-			logrus.Errorf("clean %v %s network failed: %v", reply.Nic, reply.IP, err)
-		}
 	}
 
 	return reply, nil

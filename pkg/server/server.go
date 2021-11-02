@@ -180,16 +180,6 @@ func (s *IPAMServer) AddNetwork(context context.Context, in *rpc.IPAMMessage) (*
 
 	podIP = rst.IPs[0].Address.IP.String()
 
-	if s.conf.NetworkPolicy == "calico" {
-		// patch pod's annotations for calico policy
-		if err := s.patchPodIPAnnotations(in.Args.Namespace, in.Args.Name, podIP); err != nil {
-			if err := s.ipamclient.ReleaseByHandle(handleID); err != nil {
-				log.Errorf("AddNetwork request (%v) ReleaseByHandle failed: %v", in.Args, err)
-			}
-			return nil, err
-		}
-	}
-
 	in.Args.VxNet = info.IPPool
 	in.Args.PodIP = podIP
 	in.IP = podIP

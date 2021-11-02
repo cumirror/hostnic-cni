@@ -64,25 +64,13 @@ func (n NetworkUtils) CleanupPodNetwork(nic *rpc.HostNic, podIP string) error {
 // SetupNicNetwork adds default route to route table (nic-<nic_table>)
 func (n NetworkUtils) SetupNetwork(nic *rpc.HostNic) (rpc.Phase, error) {
 	devName := constants.GetHostNicName(nic.VxNet.ID)
-	brName := constants.GetHostNicBridgeName(int(nic.RouteTableNum))
-	master, slave, err := n.getLinksByMacAddr(nic.HardwareAddr)
-	if master == nil && slave == nil {
-		return rpc.Phase_Init, fmt.Errorf("failed to get link %s: %v %v %v", nic.HardwareAddr, master, slave, err)
+	master, _, err := n.getLinksByMacAddr(nic.HardwareAddr)
+	if master == nil {
+		return rpc.Phase_Init, fmt.Errorf("failed to get link %s: %v %v", nic.HardwareAddr, master, err)
 	}
 
-	// nic has attached, but bridge not set
-	if slave == nil {
-		if err := n.setupNicNetwork(devName, master); err != nil {
-			return rpc.Phase_CreateAndAttach, err
-		}
-		if err := n.setupBridgeNetwork(master, brName); err != nil {
-			return rpc.Phase_JoinBridge, err
-		}
-		if err := n.setupRouteTable(nic); err != nil {
-			return rpc.Phase_SetRouteTable, err
-		}
-	} else {
-		// do nothing: nic has attached and bridge is ready
+	if err := n.setupNicNetwork(devName, master); err != nil {
+		return rpc.Phase_CreateAndAttach, err
 	}
 
 	return rpc.Phase_Succeeded, nil
